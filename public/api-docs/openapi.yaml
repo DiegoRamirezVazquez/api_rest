@@ -1,0 +1,119 @@
+openapi: 3.0.3
+
+info:
+  title: API de Gestion de Tareas
+  description: API REST para la gestion de Tareas
+  version: 1.0.0
+
+servers:
+  - url: /api/v2
+    description: API V2 local
+    
+paths:
+  /tareas:
+    get:
+      summary: Obtener todas las tareas
+      responses: 
+        '200':
+          description: Lista de tareas
+          content: 
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tarea'
+
+    post:
+      summary: Crear una nueva tarea
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TareaInput'
+      responses:
+        '201':
+          description: Tarea creada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tarea'
+
+  /tareas/{id}:
+
+    get:
+      summary: Obtener tarea por id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses: 
+        '200':
+          description: Tarea encontrada
+          content: 
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tarea'
+        '404':
+          description: Tarea no encontrada
+
+    put: 
+      summary: Actualizar tarea
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TareaInput'
+      responses:
+        '200':
+          description: Tarea actualizada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tarea'
+        '404':
+          description: Tarea no encontrada
+
+components:
+  schemas:
+    Tarea:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        
+        titulo:
+          type: string
+          example: Estudiar API-First
+        completada:
+          type: boolean
+          example: false
+        fecha_creacion:
+          type: string
+          format: date-time
+          example: "2026-09-07T10:00:00Z" 
+
+    TareaInput:
+      type: object
+      required:
+        - titulo
+        - completada
+      properties:
+        titulo:
+          type: string
+          example: Estudiar API-First
+        completada:
+          type: boolean
+          example: false
+
+      

@@ -14,6 +14,7 @@ require_once __DIR__ . '/../resources/v2/LogoutResource.php';
 require_once __DIR__ . '/../resources/v2/LoginResource.php';
 require_once __DIR__ . '/../core/AuthMiddleware.php';
 require_once __DIR__ . '/../resources/v2/MeResource.php';
+require_once __DIR__ . '/../resources/v2/TareaResource.php';
 
 $basePath = '';
 
@@ -48,6 +49,7 @@ $authMiddleware = new AuthMiddleware();
 $logoutResource = new LogoutResource();
 $loginResource = new LoginResource();
 $meResource = new MeResource();
+$tareaResource = new TareaResource();
 
 $routerV2->addRoute('POST', '/login', [$loginResource, 'login']);
 $routerV2->addRoute('POST', '/logout', [$logoutResource, 'logout']);
@@ -133,6 +135,24 @@ $routerV2->addRoute('DELETE', '/productos/{id}', function ($id) use ($authMiddle
     return $productoApiResource->destroy($id);
 });
 
+
+// RUTAS DE TAREAS V2
+
+$routerV2->addRoute('GET', '/tareas', function () use ($tareaResource) {
+    return $tareaResource->index();
+});
+
+$routerV2->addRoute('GET', '/tareas/{id}', function ($id) use ($tareaResource) {
+    return $tareaResource->show($id);
+});
+
+$routerV2->addRoute('POST', '/tareas', function () use ($tareaResource) {
+    return $tareaResource->store();
+});
+
+$routerV2->addRoute('PUT', '/tareas/{id}', function ($id) use ($tareaResource) {
+    return $tareaResource->update($id);
+});
 
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
