@@ -47,3 +47,15 @@ Para poder levantar el proyecto solamente debemos de hacer una serie de pasos:
     4. Y ya podemos probar los endpoints
 
 - Si estamos en el servidor que se nos asigno, solo basta con ingresar el URL destinado en postman o en el navegador, ya en cualquier de los dos los configuramos para que funcione de manera correcta.
+
+
+Si queremos comprobar los endpoints desde postman:
+![Get de la lista de tareas](imagenes/get_Servidor.png)
+![Post para crear tareas](imagenes/post_Servidor.png)
+![Get con id de la tarea](imagenes/get_id_Servidor.png)
+![Put para actualizar una tarea](imagenes/put_Servidor.png)
+
+Ahora si queremos ver que swagger funciona:
+![Swagger funcionando con el URL del servidor](imagenes/swagger_Servidor.png)
+
+
