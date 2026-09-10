@@ -1,0 +1,470 @@
+openapi: 3.0.3
+info:
+  title: Password Security API
+  description: >
+    API para la generación y validación de contraseñas seguras.
+    Permite generar contraseñas aleatorias con criterios configurables,
+    validar la fortaleza de una contraseña dada y consultar la
+    política de contraseñas vigente del sistema.
+
+    Este documento es la especificación de contrato que el backend
+    debe implementar. No incluye implementación, solo el diseño
+    de los endpoints, esquemas de datos y respuestas esperadas.
+  version: 1.0.0
+  contact:
+    name: Cátedra - Proyecto Password Security
+  license:
+    name: MIT
+
+servers:
+  - url: https://api.passwordsecurity.local/v1
+    description: Servidor de desarrollo (local)
+  - url: https://api.passwordsecurity.example.com/v1
+    description: Servidor de producción (ejemplo)
+
+tags:
+  - name: Generación
+    description: Endpoints para generar contraseñas seguras
+  - name: Validación
+    description: Endpoints para validar la fortaleza de contraseñas
+  - name: Política
+    description: Endpoints para consultar reglas de seguridad configuradas
+  - name: Autenticación
+    description: Endpoints de registro e inicio de sesión que usan el sistema de contraseñas
+
+paths:
+
+  /passwords/generate:
+    post:
+      tags: [Generación]
+      summary: Genera una o varias contraseñas seguras
+      description: >
+        Genera contraseñas aleatorias criptográficamente seguras según los
+        parámetros indicados (longitud, tipos de caracteres, exclusión de
+        caracteres ambiguos, cantidad a generar).
+      operationId: generatePassword
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordGenerationRequest'
+            examples:
+              default:
+                summary: Petición con valores por defecto
+                value: {}
+              personalizada:
+                summary: Petición personalizada
+                value:
+                  length: 20
+                  includeUppercase: true
+                  includeLowercase: true
+                  includeNumbers: true
+                  includeSymbols: true
+                  excludeSimilarCharacters: true
+                  excludeAmbiguousSymbols: false
+                  count: 3
+      responses:
+        '200':
+          description: Contraseña(s) generada(s) correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordGenerationResponse'
+              example:
+                passwords:
+                  - "K7#mPz9$qLxT2vNw"
+                  - "R4!bYc8&hJf3sUeQ"
+                  - "W6@nTg5*dXk1oPmZ"
+                criteria:
+                  length: 20
+                  includeUppercase: true
+                  includeLowercase: true
+                  includeNumbers: true
+                  includeSymbols: true
+                  excludeSimilarCharacters: true
+                  excludeAmbiguousSymbols: false
+                  count: 3
+        '400':
+          description: Parámetros inválidos (por ejemplo, longitud fuera de rango o ningún tipo de carácter habilitado)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "invalid_parameters"
+                message: "Debe habilitar al menos un tipo de carácter (mayúsculas, minúsculas, números o símbolos)."
+        '422':
+          description: La combinación de parámetros no permite generar una contraseña válida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /passwords/validate:
+    post:
+      tags: [Validación]
+      summary: Valida y puntúa la fortaleza de una contraseña
+      description: >
+        Analiza una contraseña dada y devuelve su nivel de seguridad,
+        una puntuación numérica, las reglas que cumple o incumple, y
+        sugerencias para mejorarla.
+      operationId: validatePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordValidationRequest'
+            example:
+              password: "Contraseña123"
+      responses:
+        '200':
+          description: Resultado del análisis de la contraseña
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordValidationResponse'
+              example:
+                password: "Contraseña123"
+                isValid: false
+                strength: "media"
+                score: 62
+                rules:
+                  - rule: "minLength"
+                    description: "Debe tener al menos 12 caracteres"
+                    passed: true
+                  - rule: "hasUppercase"
+                    description: "Debe incluir al menos una letra mayúscula"
+                    passed: true
+                  - rule: "hasLowercase"
+                    description: "Debe incluir al menos una letra minúscula"
+                    passed: true
+                  - rule: "hasNumber"
+                    description: "Debe incluir al menos un número"
+                    passed: true
+                  - rule: "hasSymbol"
+                    description: "Debe incluir al menos un símbolo especial"
+                    passed: false
+                  - rule: "noCommonPassword"
+                    description: "No debe ser una contraseña de uso común"
+                    passed: true
+                  - rule: "noSequentialChars"
+                    description: "No debe contener secuencias obvias (abc, 123)"
+                    passed: false
+                suggestions:
+                  - "Agrega al menos un símbolo especial (por ejemplo: !, @, #, $)"
+                  - "Evita secuencias numéricas consecutivas como '123'"
+        '400':
+          description: Cuerpo de la petición inválido (por ejemplo, campo 'password' ausente o vacío)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /passwords/policy:
+    get:
+      tags: [Política]
+      summary: Obtiene la política de contraseñas vigente
+      description: >
+        Devuelve las reglas actuales que el sistema aplica para considerar
+        una contraseña como válida/segura (longitud mínima, tipos de
+        caracteres requeridos, reglas adicionales, etc.).
+      operationId: getPasswordPolicy
+      responses:
+        '200':
+          description: Política de contraseñas actual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordPolicy'
+              example:
+                minLength: 12
+                maxLength: 64
+                requireUppercase: true
+                requireLowercase: true
+                requireNumbers: true
+                requireSymbols: true
+                disallowCommonPasswords: true
+                disallowUsernameInPassword: true
+                disallowSequentialCharacters: true
+                passwordHistoryLimit: 5
+                expirationDays: 90
+
+  /auth/register:
+    post:
+      tags: [Autenticación]
+      summary: Registra un usuario aplicando la política de contraseñas
+      description: >
+        Crea un nuevo usuario. La contraseña enviada debe cumplir la
+        política vigente (ver GET /passwords/policy); en caso contrario
+        se debe rechazar con 422 e incluir el detalle de validación.
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              username: "ana.martinez"
+              email: "ana.martinez@example.com"
+              password: "R4!bYc8&hJf3sUeQ"
+      responses:
+        '201':
+          description: Usuario creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '409':
+          description: El usuario o correo ya existe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: La contraseña no cumple con la política de seguridad
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordValidationResponse'
+
+  /auth/login:
+    post:
+      tags: [Autenticación]
+      summary: Autentica a un usuario
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Autenticación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '423':
+          description: Cuenta bloqueada temporalmente por múltiples intentos fallidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    PasswordGenerationRequest:
+      type: object
+      description: Parámetros para generar contraseñas. Todos los campos son opcionales y toman valores por defecto.
+      properties:
+        length:
+          type: integer
+          minimum: 8
+          maximum: 128
+          default: 16
+          description: Longitud de la contraseña a generar
+        includeUppercase:
+          type: boolean
+          default: true
+          description: Incluir letras mayúsculas (A-Z)
+        includeLowercase:
+          type: boolean
+          default: true
+          description: Incluir letras minúsculas (a-z)
+        includeNumbers:
+          type: boolean
+          default: true
+          description: Incluir dígitos (0-9)
+        includeSymbols:
+          type: boolean
+          default: true
+          description: Incluir símbolos especiales (!@#$%^&*...)
+        excludeSimilarCharacters:
+          type: boolean
+          default: false
+          description: Excluir caracteres visualmente similares (ej. 'l', '1', 'I', 'O', '0')
+        excludeAmbiguousSymbols:
+          type: boolean
+          default: false
+          description: 
+        count:
+          type: integer
+          minimum: 1
+          maximum: 50
+          default: 1
+          description: Cantidad de contraseñas a generar en la misma petición
+
+    PasswordGenerationResponse:
+      type: object
+      properties:
+        passwords:
+          type: array
+          items:
+            type: string
+          description: Lista de contraseñas generadas
+        criteria:
+          $ref: '#/components/schemas/PasswordGenerationRequest'
+      required: [passwords, criteria]
+
+    PasswordValidationRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          description: Contraseña a validar
+        username:
+          type: string
+          description: Nombre de usuario opcional, para verificar que la contraseña no lo contenga
+      required: [password]
+
+    PasswordRuleResult:
+      type: object
+      properties:
+        rule:
+          type: string
+          description: Identificador de la regla evaluada
+          example: "minLength"
+        description:
+          type: string
+          description: Descripción legible de la regla
+        passed:
+          type: boolean
+          description: Indica si la contraseña cumple esta regla
+      required: [rule, description, passed]
+
+    PasswordValidationResponse:
+      type: object
+      properties:
+        password:
+          type: string
+        isValid:
+          type: boolean
+          description: True si la contraseña cumple con todas las reglas obligatorias de la política
+        strength:
+          type: string
+          enum: [muy_debil, debil, media, fuerte, muy_fuerte]
+          description: Categoría de fortaleza calculada a partir del score
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Puntuación numérica de fortaleza de la contraseña
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/PasswordRuleResult'
+        suggestions:
+          type: array
+          items:
+            type: string
+          description: Recomendaciones concretas para mejorar la contraseña
+      required: [password, isValid, strength, score, rules]
+
+    PasswordPolicy:
+      type: object
+      properties:
+        minLength:
+          type: integer
+          example: 12
+        maxLength:
+          type: integer
+          example: 64
+        requireUppercase:
+          type: boolean
+        requireLowercase:
+          type: boolean
+        requireNumbers:
+          type: boolean
+        requireSymbols:
+          type: boolean
+        disallowCommonPasswords:
+          type: boolean
+          description: Rechaza contraseñas presentes en listas de contraseñas comunes/filtradas
+        disallowUsernameInPassword:
+          type: boolean
+          description: Rechaza contraseñas que contengan el nombre de usuario
+        disallowSequentialCharacters:
+          type: boolean
+          description: Rechaza secuencias obvias como '1234' o 'abcd'
+        passwordHistoryLimit:
+          type: integer
+          description: Cantidad de contraseñas anteriores que no se pueden reutilizar
+        expirationDays:
+          type: integer
+          description: Días antes de requerir un cambio de contraseña (0 = sin expiración)
+
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [username, email, password]
+
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required: [username, password]
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        createdAt:
+          type: string
+          format: date-time
+
+    AuthTokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          description: Duración del token en segundos
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Código corto del error
+        message:
+          type: string
+          description: Mensaje descriptivo del error
+      required: [error, message]
